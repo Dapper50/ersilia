@@ -1,8 +1,8 @@
-# Todo
 import importlib
 from ...utils.terminal import run_command
 
 
+# TODO
 class IsauraRequirement(object):
     def __init__(self):
         self.name = "isaura"
@@ -12,4 +12,4 @@ class IsauraRequirement(object):
             self.install()
 
     def install(self):
-        pass
+        run_command()

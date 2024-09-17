@@ -13,13 +13,20 @@ from .. import logger
 from .. import ErsiliaBase
 from .schema import ApiSchema
 
+from ..utils.exceptions_utils.api_exceptions import InputFileNotFoundError
+from ..utils.logging import make_temp_dir
+
 
 class Api(object):
     def __init__(self, model_id, url, api_name, save_to_lake, config_json):
         self.config_json = config_json
         self.model_id = model_id
-        self.input_adapter = GenericInputAdapter(self.model_id, config_json=config_json)
-        self.output_adapter = GenericOutputAdapter(config_json=config_json)
+        self.input_adapter = GenericInputAdapter(
+            model_id=self.model_id, config_json=config_json
+        )
+        self.output_adapter = GenericOutputAdapter(
+            model_id=self.model_id, config_json=config_json
+        )
         self.lake = IsauraInterface(
             model_id=model_id, api_name=api_name, config_json=config_json
         )
@@ -116,7 +123,7 @@ class Api(object):
     def post_only_calculations(self, input, output, batch_size):
         self._batch_size = batch_size
         if output is not None:
-            tmp_folder = tempfile.mkdtemp(prefix="ersilia-")
+            tmp_folder = make_temp_dir(prefix="ersilia-")
             fmt = output.split(".")[-1]
             output_base = ".".join(os.path.basename(output).split(".")[:-1])
             i = 0
@@ -145,7 +152,7 @@ class Api(object):
     def post_only_reads(self, input, output, batch_size):
         self._batch_size = batch_size
         if output is not None:
-            tmp_folder = tempfile.mkdtemp(prefix="ersilia-")
+            tmp_folder = make_temp_dir(prefix="ersilia-")
             fmt = output.split(".")[-1]
             output_base = ".".join(os.path.basename(output).split(".")[:-1])
             i = 0
@@ -216,7 +223,7 @@ class Api(object):
         self.logger.debug(
             "Checking for already available calculations in the data lake"
         )
-        tmp_folder = tempfile.mkdtemp(prefix="ersilia-")
+        tmp_folder = make_temp_dir(prefix="ersilia-")
         done_input = os.path.join(tmp_folder, "done_input.csv")
         todo_input = os.path.join(tmp_folder, "todo_input.csv")
         cur_idx = 0
@@ -294,7 +301,22 @@ class Api(object):
             for res in self.post_amenable_to_h5(input, output, batch_size):
                 yield res
 
+    def _is_input_file(self, input):
+        if type(input) is str:
+            if input.endswith(".csv"):
+                return True
+            if input.endswith(".tst"):
+                return True
+            if input.endswith(".json"):
+                return True
+            if input.endswith(".txt"):
+                return True
+        return False
+
     def post(self, input, output, batch_size):
+        if self._is_input_file(input):
+            if not os.path.exists(input):
+                raise InputFileNotFoundError(file_name=input)
         self.logger.debug("Posting to {0}".format(self.api_name))
         self.logger.debug("Batch size {0}".format(batch_size))
         unique_input, mapping = self._unique_input(input)

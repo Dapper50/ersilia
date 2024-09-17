@@ -1,10 +1,13 @@
+import os
 import tempfile
 from ..utils.docker import SimpleDocker
 from ..utils.versioning import Versioner
 from .. import ErsiliaBase
 from .utils.clone import ErsiliaCloner
+from ..utils.logging import make_temp_dir
 
 
+# TODO: Make sure it is used.
 class SetupBaseDocker(ErsiliaBase):
     def __init__(self, config_json=None):
         ErsiliaBase.__init__(self, config_json=config_json)
@@ -37,7 +40,7 @@ class SetupBaseDocker(ErsiliaBase):
             return
         ptag = self._parse_tag(tag)
         # get a copy of the repository in a temporary directory
-        tmp_folder = tempfile.mkdtemp(prefix="ersilia-")
+        tmp_folder = make_temp_dir(prefix="ersilia-")
         tmp_repo = self.cloner.clone(tmp_folder, version=ptag["ver"])
         # write the dockerfile
         dockerfile = """
@@ -61,7 +64,7 @@ class SetupBaseDocker(ErsiliaBase):
             lines = lines[1:-1]
             for l in lines:
                 f.write(l[8:] + "\n")
-        docker.build(path=tmp_repo, org=org, img=img, tag=tag)
+        self.docker.build(path=tmp_repo, org=org, img=img, tag=tag)
 
     def delete(self, org, tag):
         pass

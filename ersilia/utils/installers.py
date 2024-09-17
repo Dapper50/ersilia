@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 from .conda import SimpleConda
+from ..setup.baseconda import SetupBaseConda
 from ..default import EOS, CONFIG_JSON
 from .. import ErsiliaBase
 from .. import check_install_status
@@ -10,6 +11,7 @@ from .config import Checker
 from .terminal import run_command
 from .versioning import Versioner
 import click
+from .logging import make_temp_dir
 
 INSTALL_LOG_FILE = ".install.log"
 
@@ -155,14 +157,14 @@ class Installer(BaseInstaller):
         sc = SimpleConda()
         if sc.exists(eos_base_env):
             return
-        tmp_folder = tempfile.mkdtemp(prefix="ersilia-")
+        tmp_folder = make_temp_dir(prefix="ersilia-")
         tmp_repo = self._clone_repo(tmp_folder)
         tmp_script = os.path.join(tmp_folder, "script.sh")
         tmp_python_script = os.path.join(tmp_folder, "base_installer.py")
         is_base = sc.is_base()
         if not is_base:
             bash_script = """
-            source ${0}/etc/profile.d/conda.sh
+            source {0}/etc/profile.d/conda.sh
             conda deactivate
             """.format(
                 sc.conda_prefix(False)
@@ -170,10 +172,13 @@ class Installer(BaseInstaller):
         else:
             bash_script = ""
         bash_script += """
-        source ${0}/etc/profile.d/conda.sh
+        source {0}/etc/profile.d/conda.sh
         """.format(
             sc.conda_prefix(True)
         )
+        bc = SetupBaseConda()
+        python_version = self.versions.python_version()
+        python_version = bc.find_closest_python_version(python_version)
         bash_script += """
         cd {0}
         conda create -n {1} python={2} -y
@@ -182,7 +187,7 @@ class Installer(BaseInstaller):
         python {3}
         conda deactivate
         """.format(
-            tmp_repo, eos_base_env, self.versions.python_version(), tmp_python_script
+            tmp_repo, eos_base_env, python_version, tmp_python_script
         )
         with open(tmp_script, "w") as f:
             f.write(bash_script)
@@ -213,7 +218,7 @@ class Installer(BaseInstaller):
         if docker.exists(org, img, tag):
             return
         # get a copy of the repository in a temporary directory
-        tmp_dir = tempfile.mkdtemp(prefix="ersilia-")
+        tmp_dir = make_temp_dir(prefix="ersilia-")
         tmp_repo = self._clone_repo(tmp_dir)
         # write the dockerfile
         dockerfile = """
@@ -297,7 +302,7 @@ def base_installer(ignore_status=False):
 
 
 def full_installer(ignore_status=False):
-    """The full installer does all the installations necessary to run ersila."""
+    """The full installer does all the installations necessary to run ersilia."""
     status = check_install_status()
     if status["status"] != "full" or ignore_status:
         ins = Installer()

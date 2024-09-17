@@ -17,22 +17,54 @@ class ApiSchema(ErsiliaBase):
             self.logger.debug("Schema not yet available")
         else:
             self.logger.debug("Schema available in {0}".format(self.schema_file))
+        self._array_types = set(
+            ["array", "mixed_array", "string_array", "numeric_array"]
+        )
+        self._h5_serializable_types = set(["numeric", "numeric_array", "array"])
 
     def _features(self, o):
         if o["meta"] is not None:
             return o["meta"]
-        if o["type"] == "array":
+        if o["type"] in self._array_types:
             shape = o["shape"]
         else:
             return None
-        assert len(shape) == 1  # TODO: work with arbitrary shape arrays/tensors
-        n = shape[0]
-        chars = len(str(n))
-        names = []
-        for i in range(n):
-            i = str(i).zfill(chars)
-            names += ["f{0}".format(i)]
-        return names
+        if len(shape) == 1:  # array
+            n = shape[0]
+            if n is None:
+                return None
+            chars = len(str(n))
+            names = []
+            for i in range(n):
+                i = str(i).zfill(chars)
+                names += ["f{0}".format(i)]
+            return names
+        if len(shape) == 2:  # image
+            n = shape[0]
+            m = shape[1]
+            names = []
+            for i in range(n):
+                names_ = []
+                for j in range(m):
+                    names_ += ["f{0}-{1}".format(i, j)]
+                names += [names_]
+            return names
+        if len(shape) == 3:  # image with channels
+            n = shape[0]
+            m = shape[1]
+            l = shape[2]
+            names = []
+            for i in range(n):
+                names_ = []
+                for j in range(m):
+                    names__ = []
+                    for k in range(l):
+                        names__ += ["f{0}-{1}-{2}".format(i, j, k)]
+                    names_ += [names__]
+                names += [names_]
+            return names
+        # TODO: Make this generalizable
+        return None
 
     def isfile(self):
         return os.path.isfile(self.schema_file)
@@ -57,8 +89,8 @@ class ApiSchema(ErsiliaBase):
 
     def is_h5_serializable(self, api_name):
         schema = self.get_output_by_api(api_name)
-        for k, v in schema.items():
-            if v["type"] != "numeric" and v["type"] != "array":  # TODO generalize
+        for _, v in schema.items():
+            if v["type"] not in self._h5_serializable_types:
                 return False
         return True
 
@@ -81,7 +113,7 @@ class ApiSchema(ErsiliaBase):
         return sorted(self.schema.keys())
 
     def empty_by_field(self, field):
-        if field["type"] == "array":
+        if field["type"] in self._array_types:
             shape = tuple(field["shape"])
             return np.full(shape, None).tolist()
         return None

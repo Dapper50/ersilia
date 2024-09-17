@@ -1,0 +1,167 @@
+name: 🦠 Model Request
+description: Request a model to be included in the hub
+title: "🦠 Model Request: <name>"
+labels: [new-model]
+
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for taking the time to open a Model Request!"
+
+  - type: input
+    id: model-name
+    attributes:
+      label: Model Name
+      description: "Suggest a name for your model"
+      placeholder: "Antimicrobial activity prediction"
+    validations:
+      required: true
+
+  - type: input
+    id: model-description
+    attributes:
+      label: Model Description
+      description: "Please provide a short description of your model"
+      placeholder: "Prediction of the E.coli in vitro growth inhibition potential of small molecules"
+    validations:
+      required: true
+
+  - type: input
+    id: slug
+    attributes:
+      label: Slug
+      description: "Please provide (or suggest) a 'slug' for your model. A slug is a short label for something, containing only letters, numbers, or hyphens"
+      placeholder: "antimicrobial-activity-prediction"
+    validations:
+      required: true
+        
+  - type: dropdown
+    id: tag
+    attributes:
+      label: Tag
+      multiple: true
+      description: "Please provide (or suggest) keywords ('tag') for your model. Tags are used to categorize your model. Tags should be short and appear as comma separated items. Please check our [model repository](https://airtable.com/shrUcrUnd7jB9ChZV) to explore valid tags. At least one tag is required"
+      options:
+        - A.baumannii
+        - ADME
+        - AIDS
+        - Alzheimer
+        - Antifungal activity
+        - Antimicrobial activity
+        - Antiviral activity
+        - BACE
+        - Bioactivity profile
+        - Biomedical text
+        - Cancer
+        - Cardiotoxicity
+        - ChEMBL
+        - Chemical graph model
+        - Chemical language model
+        - Chemical notation
+        - Chemical synthesis
+        - Compound generation
+        - COVID19
+        - CYP450
+        - Cytotoxicity
+        - Dengue
+        - Descriptor
+        - Drug-likeness
+        - DrugBank
+        - E.coli
+        - E.faecium
+        - Embedding
+        - ESKAPE
+        - Fingerprint
+        - Fraction bound
+        - GPCR
+        - Half-life
+        - HBV
+        - HDAC1
+        - hERG
+        - HIV
+        - Human
+        - IC50
+        - K.pneumoniae
+        - Lipophilicity
+        - LogD
+        - LogP
+        - LogS
+        - M.tuberculosis
+        - Malaria
+        - Metabolism
+        - MIC90
+        - Microsomal stability
+        - Molecular weight
+        - MoleculeNet
+        - Mouse
+        - Mycetoma
+        - N.gonorrhoeae
+        - Natural product
+        - Neglected tropical disease
+        - P.aeruginosa
+        - P.falciparum
+        - Papp
+        - Permeability
+        - pKa
+        - Price
+        - Quantum properties
+        - Rat
+        - S.aureus
+        - Sars-CoV-2
+        - Schistosomiasis
+        - Side effects
+        - Similarity
+        - Solubility
+        - Synthetic accessibility
+        - Target identification
+        - TDCommons
+        - Therapeutic indication
+        - Tox21
+        - ToxCast
+        - Toxicity
+        - Tuberculosis
+        - ZINC
+    validations:
+      required: true
+
+  - type: input
+    id: model-publication
+    attributes:
+      label: Publication
+      description: "Is there a link to a publication?"
+
+  - type: input
+    id: source-code
+    attributes:
+      label: Source Code
+      description: "Is code for the model available? If so, please provide link to repository (GitHub, GitLab, BitBucket...)?"
+
+  - type: dropdown
+    id: model-license
+    attributes:
+      label: License
+      multiple: false
+      description: "If there is a license, please provide the name of the license (or No-license if there is no license specified). Please check the [SPDX License List](https://spdx.org/licenses/) or our [model repository](https://airtable.com/shrUcrUnd7jB9ChZV) to explore valid licenses."
+      options:
+        - MIT
+        - GPL-3.0-only
+        - GPL-3.0-or-later
+        - LGPL-3.0-only
+        - LGPL-3.0-or-later
+        - AGPL-3.0-only
+        - AGPL-3.0-or-later
+        - Apache-2.0
+        - BSD-2-Clause
+        - BSD-3-Clause
+        - MPL-2.0
+        - CC-BY-3.0
+        - CC-BY-4.0
+        - Proprietary
+        - Non-commercial
+        - No-license
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "After submitting this request, please edit the GitHub issue body to add a 'newline' somewhere so our automation can properly parse it later on. Thank you!"

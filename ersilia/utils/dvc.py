@@ -2,8 +2,13 @@ from . import terminal
 import h5py
 import os
 from ..default import H5_DATA_FILE, ISAURA_GDRIVE, ISAURA_TEAM_GDRIVE
-from pydrive2.auth import GoogleAuth
-from pydrive2.drive import GoogleDrive
+
+try:
+    from pydrive2.auth import GoogleAuth
+    from pydrive2.drive import GoogleDrive
+except:
+    GoogleAuth = None
+    GoogleDrive = None
 
 from .config import Secrets
 
@@ -12,9 +17,9 @@ def set_secrets_file():
     secrets = Secrets()
     if not os.path.exists(secrets.gdrive_client_secrets_json):
         secrets.fetch_gdrive_secrets_from_github()
-    GoogleAuth.DEFAULT_SETTINGS[
-        "client_config_file"
-    ] = secrets.gdrive_client_secrets_json
+    GoogleAuth.DEFAULT_SETTINGS["client_config_file"] = (
+        secrets.gdrive_client_secrets_json
+    )
     return GoogleAuth
 
 

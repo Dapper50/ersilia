@@ -1,4 +1,5 @@
 import click
+import csv
 
 from . import ersilia_cli
 from .. import echo

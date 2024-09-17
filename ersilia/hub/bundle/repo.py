@@ -1,9 +1,12 @@
 import os
 import json
+from re import I
 from ... import ErsiliaBase
+from ... import logger
 from ...utils.paths import Paths
 from ...utils.docker import SimpleDockerfileParser
 from ...utils.conda import SimpleConda
+from ...utils.system import SystemChecker
 from ...default import (
     CONDA_ENV_YML_FILE,
     DOCKER_BENTO_PATH,
@@ -65,6 +68,24 @@ class ServiceFile(object):
         text += add_text
         with open(file_name, "w") as f:
             f.write(text)
+
+    def add_info_api(self, information_file):
+        """Adds and info api to the service"""
+        file_name = self.get_file()
+        with open(file_name, "r") as f:
+            text = f.read()
+        splitter_string = "Service.__name__"
+        text = text.split(splitter_string)
+        a = text[0]
+        b = text[1]
+        a += "    @api(input=JsonInput(), batch=True)\n"
+        a += "    def info(self, input=None):\n"
+        a += "        import json\n"
+        a += "        data = json.load(open('{0}', 'r'))\n".format(information_file)
+        a += "        return [data]\n\n"
+        with open(file_name, "w") as f:
+            s = a + splitter_string + b
+            f.write(s)
 
     def check(self):
         """checks if the service.py contains the Service Class"""
@@ -152,6 +173,23 @@ class DockerfileFile(object):
             if len(tag) != 2:
                 return None
         result = {"version": tag[0], "slim": slim, "python": tag[-1]}
+        if result["python"] in [
+            "py30",
+            "py31",
+            "py32",
+            "py33",
+            "py34",
+            "py35",
+            "py36",
+            "py37",
+            "py38",
+            "py39",
+        ]:
+            if SystemChecker().is_arm64():
+                logger.warning(
+                    "This model is trying to install to a python version in ARM64 that is below 3.10. Changing to 3.10."
+                )
+                result["python"] = "py310"
         return result
 
     def has_runs(self):
@@ -160,20 +198,71 @@ class DockerfileFile(object):
         else:
             return False
 
+    def needs_conda(self):
+        fn = self.get_file()
+        if fn is None:
+            return False
+        with open(fn, "r") as f:
+            for l in f:
+                if "conda" in l:
+                    return True
+        return False
+
+    def get_install_commands_from_dockerfile(self, fn):
+        dp = SimpleDockerfileParser(fn)
+        runs = dp.get_runs()
+        return runs
+
     def get_install_commands(self):
         fn = self.get_file()
         if fn is None:
             return None
-        runs = self.conda.get_install_commands_from_dockerfile(fn)
-        if not runs:
-            return None
-        needs_conda = False
-        for r in runs:
-            c = "conda"
-            if r[: len(c)] == c:
-                needs_conda = True
-        result = {"conda": needs_conda, "commands": runs}
+        needs_conda = self.needs_conda()
+        runs = (
+            self.conda.get_conda_and_pip_install_commands_from_dockerfile_if_exclusive(
+                fn
+            )
+        )
+        if runs is not None:
+            exclusive_conda_and_pip = True
+        else:
+            exclusive_conda_and_pip = False
+            runs = self.get_install_commands_from_dockerfile(fn)
+        result = {
+            "conda": needs_conda,
+            "commands": runs,
+            "exclusive_conda_and_pip": exclusive_conda_and_pip,
+        }
         return result
+
+    def append_run_command(self, cmd):
+        fn = self.get_file()
+        if fn is None:
+            return None
+        R = []
+        with open(fn, "r") as f:
+            for l in f:
+                R += [l]
+        i_last = 0
+        for i, r in enumerate(R):
+            if r.startswith("RUN"):
+                i_last = i
+        j_add = 0
+        for j, r in enumerate(R[(i_last + 1) :]):
+            if r.startswith(" "):
+                j_add = j + 1
+            else:
+                break
+        i_last = i_last + j_add
+        R = (
+            R[: (i_last + 1)]
+            + ["RUN {0}{1}".format(cmd, os.linesep)]
+            + R[(i_last + 1) :]
+        )
+        with open(fn, "w") as f:
+            for r in R:
+                f.write(r)
+        self.parser = SimpleDockerfileParser(self.path)
 
     def check(self):
         return True

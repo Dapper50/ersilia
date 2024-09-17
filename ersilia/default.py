@@ -7,27 +7,70 @@ EOS = os.path.join(str(Path.home()), "eos")
 if not os.path.exists(EOS):
     os.makedirs(EOS)
 ROOT = os.path.dirname(os.path.realpath(__file__))
+BENTOML_PATH = os.path.join(str(Path.home()), "bentoml")
 CHECKSUM_NCHAR = 8
 CONDA_ENV_YML_FILE = "environment.yml"
 DOCKERFILE_FILE = "Dockerfile"
 GITHUB_ORG = "ersilia-os"
 GITHUB_ERSILIA_REPO = "ersilia"
+ERSILIA_MODEL_HUB_S3_BUCKET = "ersilia-model-hub"
+ERSILIA_MODELS_S3_BUCKET = "ersilia-models"
+ERSILIA_MODELS_ZIP_S3_BUCKET = "ersilia-models-zipped"
+MODELS_JSON = "models.json"
 CONFIG_JSON = "config.json"
 CREDENTIALS_JSON = "credentials.json"
 INSTALL_STATUS_FILE = ".install.status"
 DOCKER_BENTO_PATH = "/bento"
 DOCKERHUB_ORG = "ersiliaos"
 DOCKERHUB_LATEST_TAG = "latest"
+DEFAULT_DOCKER_PLATFORM = "linux/amd64"
 DEFAULT_MODEL_ID = "eos0zzz"
 DEFAULT_VENV = "env"
+DEFAULT_API_NAME = "run"
 PACKMODE_FILE = "pack_mode.txt"
-LOGGING_FILE = "console.log"
 CARD_FILE = "card.json"
-SILENCE_FILE = ".silence.json"
-VERBOSE_FILE = ".verbose.json"
+DOTENV_FILE = ".env"
 API_SCHEMA_FILE = "api_schema.json"
 MODEL_SIZE_FILE = "size.json"
 DEFAULT_BATCH_SIZE = 100
+FETCHED_MODELS_FILENAME = "fetched_models.txt"
+MODEL_CONFIG_FILENAME = "config.json"
+EXAMPLE_STANDARD_INPUT_CSV_FILENAME = "example_standard_input.csv"
+EXAMPLE_STANDARD_OUTPUT_CSV_FILENAME = "example_standard_output.csv"
+PREDEFINED_EXAMPLE_FILES = [
+    "model/framework/examples/input.csv",
+    "model/framework/input.csv",
+    "model/framework/example.csv",
+    "example.csv",
+]
+DEFAULT_ERSILIA_ERROR_EXIT_CODE = 1
+METADATA_JSON_FILE = "metadata.json"
+SERVICE_CLASS_FILE = "service_class.txt"
+MODEL_SOURCE_FILE = "model_source.txt"
+APIS_LIST_FILE = "apis_list.txt"
+INFORMATION_FILE = "information.json"
+IS_FETCHED_FROM_DOCKERHUB_FILE = "from_dockerhub.json"
+IS_FETCHED_FROM_HOSTED_FILE = "from_hosted.json"
+DEFAULT_UDOCKER_USERNAME = "udockerusername"
+DEFAULT_UDOCKER_PASSWORD = "udockerpassword"
+# ERSILIA_RUNS_FOLDER = "ersilia_runs"
+ALLOWED_API_NAMES = ["run", "train"]  # This can grow in the future based on needs
+PACK_METHOD_FASTAPI = "fastapi"
+PACK_METHOD_BENTOML = "bentoml"
+
+# Session and logging
+SESSIONS_DIR = os.path.join(EOS, "sessions")
+if not os.path.exists(SESSIONS_DIR):
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+SESSION_HISTORY_FILE = "history.txt"
+SESSION_JSON = "session.json"
+LOGS_DIR = "logs"
+CONTAINER_LOGS_TMP_DIR = "_logs/tmp"
+CONTAINER_LOGS_EOS_DIR = "_logs/eos" # This is not used
+LOGGING_FILE = "console.log"
+CURRENT_LOGGING_FILE = "current.log"
+SILENCE_FILE = ".silence.json"
+VERBOSE_FILE = ".verbose.json"
 
 # Isaura data lake
 H5_EXTENSION = ".h5"
@@ -42,13 +85,15 @@ ISAURA_DIR = os.path.join(EOS, "isaura", "lake")
 FEATURE_MERGE_PATTERN = "---"
 
 # Airtable
-AIRTABLE_READONLY_API_KEY = "keycTTh5uQ7v2CPbI"
 AIRTABLE_MODEL_HUB_BASE_ID = "appgxpCzCDNyGjWc8"
 AIRTABLE_MODEL_HUB_TABLE_NAME = "Models"
 
 # URLS
 ERSILIA_WEB_URL = "https://ersilia.io"
-ERSILIA_MODEL_HUB_URL = "https://airtable.com/shrUcrUnd7jB9ChZV"
+ERSILIA_MODEL_HUB_URL = "https://ersilia.io/model-hub"
+AIRTABLE_MODEL_HUB_VIEW_URL = "https://airtable.com/shrNc3sTtTA3QeEZu"
+S3_BUCKET_URL = "https://ersilia-models.s3.eu-central-1.amazonaws.com"
+S3_BUCKET_URL_ZIP = "https://ersilia-models-zipped.s3.eu-central-1.amazonaws.com"
 
 # EOS conda
 _resolve_script = "conda_env_resolve.py"
@@ -116,6 +161,8 @@ def bashrc_cli_snippet(overwrite=True):
         - overwrite (bool): Overwrite the current bash profile file if the eosconda string is found.
     """
     fn = bashrc_path()
+    if fn is None:
+        return
     with open(fn, "r") as f:
         text = f.read()
     if snippet in text:

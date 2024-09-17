@@ -1,0 +1,24 @@
+name: json syntax check
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write # required to leave comments on pull requests
+
+jobs:
+  json-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # pin@v3.5.3
+
+      - name: json syntax check
+        uses: GrantBirki/json-yaml-validate@e42e6ece9b97f2b220274c909a9a98e380c2c9fd # pin@v3.2.1
+        with:
+          exclude_file: ".github/config/exclude.txt" # .gitignore style file for exclusions
+          comment: "true" # allow PR comments with error messages

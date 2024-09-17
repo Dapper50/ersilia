@@ -1,28 +1,50 @@
 import click
-import os
 
-from ...utils import tmp_pid_file
-from . import ersilia_cli
 from .. import echo
+from . import ersilia_cli
 from ... import ErsiliaModel
 from ..messages import ModelNotFound
 
 
 def serve_cmd():
     """Creates serve command"""
+
     # Example usage: ersilia serve {MODEL}
     @ersilia_cli.command(short_help="Serve model", help="Serve model")
     @click.argument("model", type=click.STRING)
     @click.option("--lake/--no-lake", is_flag=True, default=True)
     @click.option("--docker/--no-docker", is_flag=True, default=False)
-    def serve(model, lake, docker):
+    @click.option(
+        "--port",
+        "-p",
+        default=None,
+        type=click.INT,
+        help="Preferred port to use (integer)",
+    )
+    # Add the new flag for tracking the serve session
+    @click.option(
+        "-t",
+        "--track",
+        "track",
+        is_flag=True,
+        required=False,
+        default=False,
+    )
+    def serve(model, lake, docker, port, track):
         if docker:
             service_class = "docker"
         else:
             service_class = None
-        mdl = ErsiliaModel(model, save_to_lake=lake, service_class=service_class)
+        mdl = ErsiliaModel(
+            model,
+            save_to_lake=lake,
+            service_class=service_class,
+            preferred_port=port,
+            track_runs=track,
+        )
         if not mdl.is_valid():
             ModelNotFound(mdl).echo()
+
         mdl.serve()
         if mdl.url is None:
             echo("No URL found. Service unsuccessful.", fg="red")
@@ -35,7 +57,15 @@ def serve_cmd():
         echo("   PID: {0}".format(mdl.pid), fg="yellow")
         echo("   SRV: {0}".format(mdl.scl), fg="yellow")
         echo("")
-        echo(":backhand_index_pointing_right: Available APIs:", fg="blue")
+        echo(":backhand_index_pointing_right: To run model:", fg="blue")
+        echo("   - run", fg="blue")
         apis = mdl.get_apis()
-        for api in apis:
-            echo("   - {0}".format(api), fg="blue")
+        if apis != ["run"]:
+            echo("")
+            echo("   These APIs are also valid:", fg="blue")
+            for api in apis:
+                if api != "run":
+                    echo("   - {0}".format(api), fg="blue")
+        echo("")
+        echo(":person_tipping_hand: Information:", fg="blue")
+        echo("   - info", fg="blue")

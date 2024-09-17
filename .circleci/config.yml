@@ -1,16 +1,32 @@
 version: 2
 
 jobs:
+  installation:
+    docker:
+      - image: ersiliaos/conda:3.7
+    steps:
+      - checkout
+      - run:
+          name: Install with pip and git without developer mode
+          command: |
+              source activate ersilia
+              pip install git+https://github.com/ersilia-os/ersilia.git
+      - run:
+          name: Check help
+          command: |
+              source activate ersilia
+              ersilia --help
   test:
     docker:
       - image: ersiliaos/conda:3.7
     steps:
       - checkout
       - run:
-          name: Install ersilia package in slim mode
+          name: Install ersilia package in developer mode
           command: |
               source activate ersilia
-              pip install -e .
+              pip install -U pip setuptools
+              python -m pip install -e .
       - run:
           name: Test CLI
           command: |
@@ -20,18 +36,34 @@ jobs:
           name: Fetch model
           command: |
               source activate ersilia
-              ersilia fetch eos0t01
+              ersilia -v fetch eos0t01 --repo_path ./test/models/eos0t01
       - run:
           name: Delete model
           command: |
               source activate ersilia
-              ersilia delete eos0t01
+              ersilia -v delete eos0t01
       - run:
-          name: Test Python interface
+          name: Fetch molecular-weight model
           command: |
-            source activate ersilia
-            pip install -e .[test]
-            pytest
+              source activate ersilia
+              ersilia -v fetch molecular-weight --from_github
+      - run:
+          name: Test molecular weight on inputs and outputs
+          command: |
+              source activate ersilia
+              ersilia serve molecular-weight
+              ersilia api -i "CCC" > output_one_0.json
+              ersilia api -i "CCC" -o output_one_1.json
+              ersilia api -i "CCC" -o output_one_3.csv
+              ersilia api -i test/inputs/compound_list.csv > output_list_0.json
+              ersilia api -i test/inputs/compound_list.csv -o output_list_1.json
+              ersilia api -i test/inputs/compound_list.csv -o output_list_2.csv
+              rm output_*
+      - run:
+          name: Delete molecular-weight model
+          command: |
+              source activate ersilia
+              ersilia -v delete molecular-weight
   docs-build:
     docker:
       - image: ersiliaos/conda:3.7
@@ -40,8 +72,10 @@ jobs:
       - run:
           name: Install dependencies
           command: |
+              apt-get update
               source activate ersilia
-              pip install -r requirements.txt
+              pip install -U pip setuptools
+              pip install -e .[docs]
               apt-get -y install make
       - run:
           name: Install theme
@@ -98,6 +132,7 @@ workflows:
   version: 2
   build:
     jobs:
+      - installation
       - test
       - docs-build:
           requires:

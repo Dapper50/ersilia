@@ -8,6 +8,8 @@ credentials.json
 secrets.json
 development.ipynb
 development.py
+tmp/
+.idea/
 
 # Sphinx related
 /doctrees
@@ -155,3 +157,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Don't commit .csv output files
+*.csv
